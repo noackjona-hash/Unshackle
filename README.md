@@ -1,6 +1,6 @@
 # DOM-Unshackle
 
-**DOM-Unshackle** is a production-grade Chromium Extension (Manifest V3) engineered to systematically neutralize client-side pseudo-paywalls, scroll locks, event hijacking, and CSS blur/backdrop filters using deterministic multi-signal DOM heuristics rather than fragile, hardcoded selector blacklists.
+**DOM-Unshackle** is a production-grade Firefox extension (Manifest V3, cross-browser compatible) engineered to systematically neutralize client-side pseudo-paywalls, scroll locks, event hijacking, and CSS blur/backdrop filters using deterministic multi-signal DOM heuristics rather than fragile, hardcoded selector blacklists.
 
 ---
 
@@ -51,16 +51,18 @@ flowchart TD
 
 ```text
 Unshackle/
-├── manifest.json               # Manifest V3 configuration (run_at: document_start, <all_urls>)
-├── package.json                # Lint & unit test scripts (Node.js native test runner)
+├── manifest.json               # Manifest V3 configuration (Firefox & Chromium ready)
+├── package.json                # Lint, test & build scripts
 ├── README.md                   # Architecture & operational documentation
+├── dom-unshackle.zip           # Production package for Firefox & Chrome installation
+├── icons/                      # Extension icons (16px, 32px, 48px, 128px, SVG)
 ├── src/
 │   ├── inject-styles.js        # Global CSS override layer & inline lock scrubber
 │   ├── heuristics.js           # Multi-signal barrier scoring & structural safe-guards
 │   ├── event-unhijack.js       # Scroll/key event de-hijacking & Shadow DOM traversal
 │   ├── content.js              # Debounced MutationObserver, sweep orchestrator & Alt+B hotkey
-│   ├── popup.html              # Extension Popup GUI markup
-│   ├── popup.css               # Extension Popup dark-mode stylesheet
+│   ├── popup.html              # Modern Extension Popup GUI markup
+│   ├── popup.css               # Premium dark-mode stylesheet (Firefox & WebKit compliant)
 │   └── popup.js                # Extension Popup settings, domain toggle & telemetry controller
 └── tests/
     ├── inject-styles.test.js   # Unit tests for CSS invalidation engine
@@ -96,20 +98,28 @@ Before scoring, `isProtectedElement(el)` immediately exempts:
 
 ---
 
-## Installation Guide (Chromium Developer Mode)
+## Installation Guide
 
-1. Clone or download this repository to your local machine:
-   ```bash
-   git clone https://github.com/noackjona-hash/Unshackle.git
+### Firefox (Manifest V3 Ready)
+
+1. Open Firefox and navigate to:
+   ```text
+   about:debugging#/runtime/this-firefox
    ```
-2. Open any Chromium-based browser (Google Chrome, Chromium, Brave, Microsoft Edge) and navigate to:
+2. Click **"Load Temporary Add-on..."** (Temporäres Add-on laden...).
+3. Select the `manifest.json` file inside this repository, or select the pre-packaged **`dom-unshackle.zip`**.
+4. DOM-Unshackle is immediately active with full MV3 support and built-in telemetry!
+
+### Chromium (Google Chrome, Brave, Edge, Opera)
+
+1. Open your browser and navigate to:
    ```text
    chrome://extensions
    ```
-3. Enable the **Developer mode** toggle in the top-right corner.
-4. Click **Load unpacked** in the top-left action bar.
-5. Select the root `Unshackle` directory (containing `manifest.json`).
-6. Confirm that **DOM-Unshackle** (`v1.0.0`) appears in your extensions list and is enabled.
+2. Enable the **Developer mode** toggle in the top-right corner.
+3. Click **Load unpacked** in the top-left action bar.
+4. Select the root `Unshackle` directory (containing `manifest.json`).
+5. Confirm that **DOM-Unshackle** appears in your extensions list and is enabled.
 
 ---
 

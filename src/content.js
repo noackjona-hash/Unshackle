@@ -585,7 +585,11 @@
    */
   function bindExtensionMessaging(view, documentObj, observerController) {
     const chromeApi =
-      typeof chrome !== 'undefined' && chrome ? chrome : view && view.chrome;
+      typeof chrome !== 'undefined' && chrome
+        ? chrome
+        : typeof browser !== 'undefined' && browser
+          ? browser
+          : view && (view.chrome || view.browser);
     if (!chromeApi) {
       return;
     }

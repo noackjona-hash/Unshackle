@@ -2,7 +2,7 @@
  * @file src/popup.js
  * @description Extension Popup GUI Controller for DOM-Unshackle.
  * Manages global settings, per-domain whitelisting, heuristic threshold tuning,
- * live telemetry display, and manual sanitation sweeps.
+ * live telemetry display, and manual sanitation sweeps. Compatible with Firefox and Chromium.
  */
 'use strict';
 
@@ -84,6 +84,21 @@
   }
 
   /**
+   * Resolves the WebExtension API object across Chromium and Firefox.
+   *
+   * @returns {typeof chrome | null}
+   */
+  function getExtensionApi() {
+    if (typeof chrome !== 'undefined' && chrome && chrome.runtime) {
+      return chrome;
+    }
+    if (typeof browser !== 'undefined' && browser && browser.runtime) {
+      return browser;
+    }
+    return null;
+  }
+
+  /**
    * Initializes the Popup UI in the browser window.
    */
   function initPopupUI() {
@@ -111,11 +126,25 @@
       return;
     }
 
+    const extApi = getExtensionApi();
     let activeTabId = null;
     let activeHostname = '';
     let currentSettings = Object.assign({}, DEFAULT_SETTINGS, {
       disabledHosts: []
     });
+
+    function updateStatusBadge(isActive) {
+      if (!elStatusBadge) {
+        return;
+      }
+      elStatusBadge.className = `status-badge ${isActive ? 'active' : 'paused'}`;
+      const textNode = elStatusBadge.querySelector('.status-text');
+      if (textNode) {
+        textNode.textContent = isActive ? 'AKTIV' : 'PAUSIERT';
+      } else {
+        elStatusBadge.textContent = isActive ? 'AKTIV' : 'PAUSIERT';
+      }
+    }
 
     function renderStats(stats) {
       if (!stats) {
@@ -163,34 +192,28 @@
         elToggleHost.checked = false;
       }
 
-      if (isEffectivelyActive) {
-        elStatusBadge.textContent = 'AKTIV';
-        elStatusBadge.className = 'status-badge active';
-      } else {
-        elStatusBadge.textContent = 'PAUSIERT';
-        elStatusBadge.className = 'status-badge paused';
-      }
+      updateStatusBadge(isEffectivelyActive);
     }
 
     function saveAndBroadcastSettings() {
       renderSettings();
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({ [STORAGE_KEY]: currentSettings });
+      if (extApi && extApi.storage && extApi.storage.local) {
+        extApi.storage.local.set({ [STORAGE_KEY]: currentSettings });
       }
       if (
         activeTabId !== null &&
-        typeof chrome !== 'undefined' &&
-        chrome.tabs &&
-        typeof chrome.tabs.sendMessage === 'function'
+        extApi &&
+        extApi.tabs &&
+        typeof extApi.tabs.sendMessage === 'function'
       ) {
-        chrome.tabs.sendMessage(
+        extApi.tabs.sendMessage(
           activeTabId,
           {
             type: 'DOM_UNSHACKLE_UPDATE_SETTINGS',
             settings: currentSettings
           },
           (response) => {
-            if (chrome.runtime && chrome.runtime.lastError) {
+            if (extApi.runtime && extApi.runtime.lastError) {
               return;
             }
             if (response && response.stats) {
@@ -202,8 +225,8 @@
     }
 
     // Load stored settings & query active tab
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get([STORAGE_KEY], (res) => {
+    if (extApi && extApi.storage && extApi.storage.local) {
+      extApi.storage.local.get([STORAGE_KEY], (res) => {
         if (res && res[STORAGE_KEY]) {
           currentSettings = Object.assign(
             {},
@@ -218,8 +241,8 @@
       });
     }
 
-    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (extApi && extApi.tabs && extApi.tabs.query) {
+      extApi.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs && tabs[0];
         if (!tab) {
           return;
@@ -228,12 +251,12 @@
         activeHostname = extractHostname(tab.url || '');
         renderSettings();
 
-        if (activeTabId !== null && typeof chrome.tabs.sendMessage === 'function') {
-          chrome.tabs.sendMessage(
+        if (activeTabId !== null && typeof extApi.tabs.sendMessage === 'function') {
+          extApi.tabs.sendMessage(
             activeTabId,
             { type: 'DOM_UNSHACKLE_GET_STATUS' },
             (response) => {
-              if (chrome.runtime && chrome.runtime.lastError) {
+              if (extApi.runtime && extApi.runtime.lastError) {
                 return;
               }
               if (response && response.ok) {
@@ -295,17 +318,32 @@
     });
 
     elBtnSweep.addEventListener('click', () => {
+      const labelEl = elBtnSweep.querySelector('.btn-label');
+      const originalText = labelEl ? labelEl.textContent : '';
+
+      elBtnSweep.classList.add('btn-success');
+      if (labelEl) {
+        labelEl.textContent = 'Bereinigt! ✓';
+      }
+
+      setTimeout(() => {
+        elBtnSweep.classList.remove('btn-success');
+        if (labelEl && originalText) {
+          labelEl.textContent = originalText;
+        }
+      }, 1200);
+
       if (
         activeTabId !== null &&
-        typeof chrome !== 'undefined' &&
-        chrome.tabs &&
-        typeof chrome.tabs.sendMessage === 'function'
+        extApi &&
+        extApi.tabs &&
+        typeof extApi.tabs.sendMessage === 'function'
       ) {
-        chrome.tabs.sendMessage(
+        extApi.tabs.sendMessage(
           activeTabId,
           { type: 'DOM_UNSHACKLE_RUN_SWEEP' },
           (response) => {
-            if (chrome.runtime && chrome.runtime.lastError) {
+            if (extApi.runtime && extApi.runtime.lastError) {
               return;
             }
             if (response && response.stats) {
@@ -340,6 +378,7 @@
     formatThresholdLabel,
     toggleHostInList,
     extractHostname,
+    getExtensionApi,
     initPopupUI
   };
 
@@ -347,4 +386,3 @@
     module.exports = api;
   }
 })();
-

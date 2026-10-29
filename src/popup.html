@@ -13,61 +13,123 @@
     <!-- Header -->
     <header class="header">
       <div class="brand">
-        <div class="logo-badge" aria-hidden="true">[⚡]</div>
-        <div class="brand-meta">
-          <span class="sub-label">SYS_ID // EXT</span>
-          <h1 class="title">DOM-UNSHACKLE</h1>
+        <div class="brand-icon-wrapper">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+            <path d="M13 10l-3 4h3l-1 4 4-5h-3l1-3z" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <h1 class="title">DOM-Unshackle</h1>
+            <span class="version-tag">v1.1.0</span>
+          </div>
+          <span class="sub-label">Anti-Paywall &amp; DOM Unlocker</span>
         </div>
       </div>
+
       <div class="header-right">
-        <span id="status-badge" class="status-badge active">SYS_ACTIVE</span>
-        <label class="switch" title="DOM-Unshackle global aktivieren/deaktivieren">
+        <div id="status-badge" class="status-badge active">
+          <span class="status-dot"></span>
+          <span class="status-text">AKTIV</span>
+        </div>
+        <label class="switch" title="DOM-Unshackle global aktivieren oder pausieren">
           <input type="checkbox" id="toggle-enabled" checked>
           <span class="slider"></span>
         </label>
       </div>
     </header>
 
-    <!-- Current Domain Control -->
+    <!-- Target Host Card -->
     <section class="card host-card">
       <div class="host-info">
-        <span class="label-muted">TARGET_HOST:</span>
-        <strong id="current-hostname" class="hostname">—</strong>
+        <div class="host-header">
+          <svg class="icon-sm text-dim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span class="label-muted">Aktuelle Website</span>
+        </div>
+        <strong id="current-hostname" class="hostname" title="Aktive Domain">—</strong>
       </div>
-      <label class="switch" title="Für diese Domain aktivieren/deaktivieren">
-        <input type="checkbox" id="toggle-host" checked>
-        <span class="slider"></span>
-      </label>
+      <div class="host-action">
+        <label class="switch" title="Für diese Website aktivieren/deaktivieren">
+          <input type="checkbox" id="toggle-host" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
     </section>
 
-    <!-- Live Telemetry -->
-    <section class="stats-grid" aria-label="Live-Statistik">
-      <div class="stat-box">
-        <span class="stat-label">BARRIERS</span>
-        <span id="stat-barriers" class="stat-value">0</span>
+    <!-- Live Telemetry Dashboard -->
+    <section class="stats-section">
+      <div class="section-meta">
+        <span class="section-title">LIVE-TELEMETRIE</span>
+        <span class="section-hint">Aktueller Tab</span>
       </div>
-      <div class="stat-box">
-        <span class="stat-label">BLUR_FLTR</span>
-        <span id="stat-blurs" class="stat-value">0</span>
-      </div>
-      <div class="stat-box">
-        <span class="stat-label">SCR_LOCKS</span>
-        <span id="stat-roots" class="stat-value">0</span>
-      </div>
-      <div class="stat-box">
-        <span class="stat-label">SWEEP_LAT</span>
-        <span id="stat-duration" class="stat-value">0 ms</span>
+      <div class="stats-grid" aria-label="Live-Statistik">
+        <div class="stat-box" title="Neutralisierte Overlays, Paywalls &amp; Modals">
+          <div class="stat-header">
+            <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+            </svg>
+            <span class="stat-label">Barrieren</span>
+          </div>
+          <span id="stat-barriers" class="stat-value">0</span>
+        </div>
+
+        <div class="stat-box" title="Entfernte Blur- &amp; Backdrop-Filter auf Texten">
+          <div class="stat-header">
+            <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span class="stat-label">Blur-Filter</span>
+          </div>
+          <span id="stat-blurs" class="stat-value">0</span>
+        </div>
+
+        <div class="stat-box" title="Entsperrte Scroll-Sperren auf html/body">
+          <div class="stat-header">
+            <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+            </svg>
+            <span class="stat-label">Scroll-Locks</span>
+          </div>
+          <span id="stat-roots" class="stat-value">0</span>
+        </div>
+
+        <div class="stat-box" title="Dauer des letzten Desinfektions-Sweeps">
+          <div class="stat-header">
+            <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span class="stat-label">Latenz</span>
+          </div>
+          <span id="stat-duration" class="stat-value">0 ms</span>
+        </div>
       </div>
     </section>
 
     <!-- Module Settings -->
     <section class="card settings-card">
-      <h2 class="section-title">CORE_MODULES &amp; PARAMS</h2>
+      <div class="section-meta">
+        <h2 class="section-title">SCHUTZMODULE &amp; PARAMETER</h2>
+      </div>
 
       <div class="setting-row">
         <div class="setting-text">
-          <span class="setting-name">Globaler CSS-Unlock</span>
-          <span class="setting-desc">Scroll-Sperren &amp; CSS-Filter nullen</span>
+          <div class="setting-title-row">
+            <svg class="module-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            <span class="setting-name">Globaler CSS-Unlock</span>
+          </div>
+          <span class="setting-desc">Scroll-Sperren (overflow) &amp; CSS-Blur Filter nullen</span>
         </div>
         <label class="switch">
           <input type="checkbox" id="toggle-css-unlock" checked>
@@ -77,8 +139,15 @@
 
       <div class="setting-row">
         <div class="setting-text">
-          <span class="setting-name">Paywall-Heuristik</span>
-          <span class="setting-desc">Interstitials, Overlays &amp; Backdrops entfernen</span>
+          <div class="setting-title-row">
+            <svg class="module-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            <span class="setting-name">Paywall-Heuristik</span>
+          </div>
+          <span class="setting-desc">Interstitials, Overlays &amp; Backdrops dynamisch entfernen</span>
         </div>
         <label class="switch">
           <input type="checkbox" id="toggle-heuristic" checked>
@@ -88,8 +157,14 @@
 
       <div class="setting-row">
         <div class="setting-text">
-          <span class="setting-name">Event De-Hijack</span>
-          <span class="setting-desc">Passive Event-Listener für Rad &amp; Keys erzwingen</span>
+          <div class="setting-title-row">
+            <svg class="module-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="6" y="3" width="12" height="18" rx="6"/>
+              <line x1="12" y1="7" x2="12" y2="11"/>
+            </svg>
+            <span class="setting-name">Event De-Hijack</span>
+          </div>
+          <span class="setting-desc">Mausrad- &amp; Tastaturblockaden neutralisieren</span>
         </div>
         <label class="switch">
           <input type="checkbox" id="toggle-events" checked>
@@ -97,27 +172,42 @@
         </label>
       </div>
 
+      <!-- Threshold Slider -->
       <div class="threshold-block">
         <div class="threshold-header">
-          <span class="setting-name">Aggressions-Index</span>
+          <div class="threshold-title-row">
+            <span class="setting-name">Aggressions-Index</span>
+            <span class="setting-subinfo">(Heuristik-Schwelle)</span>
+          </div>
           <span id="threshold-display" class="threshold-pill">60 (Standard)</span>
         </div>
-        <input type="range" id="range-threshold" min="40" max="85" step="5" value="60">
+        <div class="slider-wrapper">
+          <input type="range" id="range-threshold" min="40" max="85" step="5" value="60">
+        </div>
         <div class="threshold-scale">
-          <span>40 [AGGR]</span>
-          <span>60 [BAL]</span>
-          <span>85 [SAFE]</span>
+          <span class="scale-aggr">40 • Aggressiv</span>
+          <span class="scale-bal">60 • Ausgewogen</span>
+          <span class="scale-safe">85 • Vorsichtig</span>
         </div>
       </div>
     </section>
 
-    <!-- Actions -->
+    <!-- Actions & Footer -->
     <footer class="footer">
-      <button type="button" id="btn-sweep" class="btn btn-primary">
-        [RUN SWEEP // ALT+B]
+      <button type="button" id="btn-sweep" class="btn btn-primary" title="Sofortige manuelle Bereinigung im aktuellen Tab">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        <span class="btn-label">Jetzt bereinigen</span>
+        <span class="shortcut-tag">Alt+B</span>
       </button>
-      <button type="button" id="btn-reset" class="btn btn-secondary" title="Auf Standardwerte zurücksetzen">
-        CLR
+
+      <button type="button" id="btn-reset" class="btn btn-secondary" title="Alle Optionen auf Standardwerte zurücksetzen">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>
+        <span class="btn-label-reset">Reset</span>
       </button>
     </footer>
   </div>

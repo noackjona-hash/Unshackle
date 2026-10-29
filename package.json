@@ -1,11 +1,13 @@
 {
   "name": "dom-unshackle",
-  "version": "1.0.0",
-  "description": "Production-grade Chromium Extension (Manifest V3) to systematically neutralize pseudo-paywalls, scroll locks, and CSS blur filters.",
+  "version": "1.1.0",
+  "description": "Production-grade Firefox extension (Manifest V3) to systematically neutralize pseudo-paywalls, scroll locks, and CSS blur filters.",
   "private": true,
   "scripts": {
     "lint": "node --check src/inject-styles.js && node --check src/heuristics.js && node --check src/event-unhijack.js && node --check src/content.js && node --check src/popup.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "web-ext:lint": "npx web-ext lint",
+    "build": "zip -FS -r dom-unshackle.zip manifest.json icons/ src/"
   },
   "engines": {
     "node": ">=18.0.0"
