@@ -3,7 +3,7 @@
  * @description Main Content Script Orchestrator for DOM-Unshackle.
  * Coordinates global CSS overrides, heuristic barrier sweeps across DOM & Shadow DOM,
  * a debounced MutationObserver with disconnect/reconnect cycles, emergency manual
- * sweep hotkey (Alt + B), and structured console.debug telemetry.
+ * sweep hotkey (Alt + B), structured console.debug telemetry, and Popup GUI state sync.
  */
 'use strict';
 
@@ -34,6 +34,16 @@
         : {};
 
   const DEFAULT_DEBOUNCE_MS = 120;
+  const STORAGE_KEY = 'domUnshackleSettings';
+
+  const DEFAULT_SETTINGS = Object.freeze({
+    enabled: true,
+    cssUnlock: true,
+    heuristicSweep: true,
+    eventUnhijack: true,
+    threshold: 60,
+    disabledHosts: []
+  });
 
   const OBSERVER_CONFIG = {
     childList: true,
@@ -49,6 +59,68 @@
       'hidden'
     ]
   };
+
+  let currentSettings = Object.assign({}, DEFAULT_SETTINGS, {
+    disabledHosts: []
+  });
+
+  const sessionStats = {
+    neutralizedBarriers: 0,
+    unblurredContainers: 0,
+    rootsUnlocked: 0,
+    shadowRootsScanned: 0,
+    sweepsExecuted: 0,
+    lastDurationMs: 0
+  };
+
+  /**
+   * Normalizes user settings with safe defaults.
+   *
+   * @param {Object} [raw]
+   * @returns {Object}
+   */
+  function normalizeSettings(raw) {
+    const src = raw && typeof raw === 'object' ? raw : {};
+    const thresholdNum = Number(src.threshold);
+    return {
+      enabled: typeof src.enabled === 'boolean' ? src.enabled : true,
+      cssUnlock: typeof src.cssUnlock === 'boolean' ? src.cssUnlock : true,
+      heuristicSweep:
+        typeof src.heuristicSweep === 'boolean' ? src.heuristicSweep : true,
+      eventUnhijack:
+        typeof src.eventUnhijack === 'boolean' ? src.eventUnhijack : true,
+      threshold:
+        Number.isFinite(thresholdNum) && thresholdNum >= 30 && thresholdNum <= 100
+          ? thresholdNum
+          : DEFAULT_SETTINGS.threshold,
+      disabledHosts: Array.isArray(src.disabledHosts)
+        ? src.disabledHosts.filter((h) => typeof h === 'string' && h.trim())
+        : []
+    };
+  }
+
+  /**
+   * Determines whether DOM-Unshackle is enabled for a given hostname.
+   *
+   * @param {Object} settings
+   * @param {string} [hostname='']
+   * @returns {boolean}
+   */
+  function isActiveForHost(settings, hostname = '') {
+    const cfg = settings || currentSettings;
+    if (!cfg.enabled) {
+      return false;
+    }
+    const cleanHost = String(hostname || '')
+      .trim()
+      .toLowerCase();
+    if (!cleanHost) {
+      return true;
+    }
+    return !cfg.disabledHosts.some(
+      (h) => String(h).trim().toLowerCase() === cleanHost
+    );
+  }
 
   /**
    * High-resolution timestamp helper (in milliseconds).
@@ -115,6 +187,47 @@
   }
 
   /**
+   * Reverts injected styles and restores neutralized barriers when disabled via GUI.
+   *
+   * @param {Document} [doc=document]
+   * @param {Object} [observerController=null]
+   */
+  function rollbackPageModifications(doc, observerController) {
+    const targetDoc = doc || (typeof document !== 'undefined' ? document : null);
+    if (!targetDoc) {
+      return;
+    }
+
+    if (observerController && typeof observerController.pause === 'function') {
+      observerController.pause();
+    }
+
+    try {
+      const revertScope = (scope) => {
+        if (typeof stylesModule.removeGlobalStyles === 'function') {
+          stylesModule.removeGlobalStyles(scope);
+        }
+        if (typeof heuristicsModule.restoreNeutralizedBarriers === 'function') {
+          heuristicsModule.restoreNeutralizedBarriers(scope);
+        }
+      };
+
+      if (typeof unhijackModule.traverseWithShadowDOM === 'function') {
+        unhijackModule.traverseWithShadowDOM(targetDoc, revertScope);
+      } else {
+        revertScope(targetDoc);
+      }
+    } finally {
+      if (
+        observerController &&
+        typeof observerController.resume === 'function'
+      ) {
+        observerController.resume();
+      }
+    }
+  }
+
+  /**
    * Executes a full sanitation sweep across the document and all open ShadowRoot trees.
    * Disconnects the active MutationObserver before mutating the DOM and reconnects
    * in a finally block to guarantee zero infinite mutation loops.
@@ -125,6 +238,7 @@
    * @param {Object} [options.observerController=null]
    * @param {string} [options.trigger='manual']
    * @param {Console} [options.logger=console]
+   * @param {Object} [options.settings=currentSettings]
    * @returns {{
    *   trigger: string,
    *   durationMs: number,
@@ -140,7 +254,27 @@
     const win = options.win || (typeof window !== 'undefined' ? window : null);
     const observerController = options.observerController || null;
     const trigger = options.trigger || 'manual';
-    const logger = options.logger || (typeof console !== 'undefined' ? console : null);
+    const logger =
+      options.logger || (typeof console !== 'undefined' ? console : null);
+    const activeSettings = options.settings
+      ? normalizeSettings(options.settings)
+      : currentSettings;
+
+    const hostname =
+      win && win.location && typeof win.location.hostname === 'string'
+        ? win.location.hostname
+        : '';
+
+    if (!isActiveForHost(activeSettings, hostname)) {
+      return {
+        trigger,
+        durationMs: 0,
+        neutralizedBarriers: 0,
+        unblurredContainers: 0,
+        rootsUnlocked: 0,
+        shadowRootsScanned: 0
+      };
+    }
 
     if (observerController && typeof observerController.pause === 'function') {
       observerController.pause();
@@ -154,32 +288,44 @@
 
     try {
       if (doc) {
-        if (typeof stylesModule.injectGlobalStyles === 'function') {
-          stylesModule.injectGlobalStyles(doc);
-        }
-        if (typeof stylesModule.unlockRootScroll === 'function') {
-          rootsUnlocked += stylesModule.unlockRootScroll(doc);
+        if (activeSettings.cssUnlock) {
+          if (typeof stylesModule.injectGlobalStyles === 'function') {
+            stylesModule.injectGlobalStyles(doc);
+          }
+          if (typeof stylesModule.unlockRootScroll === 'function') {
+            rootsUnlocked += stylesModule.unlockRootScroll(doc);
+          }
+        } else if (typeof stylesModule.removeGlobalStyles === 'function') {
+          stylesModule.removeGlobalStyles(doc);
         }
 
         const sweepScope = (scope) => {
-          // Inject stylesheet into nested ShadowRoots
+          if (activeSettings.cssUnlock) {
+            if (
+              scope &&
+              scope.nodeType === 11 &&
+              typeof stylesModule.injectGlobalStyles === 'function'
+            ) {
+              stylesModule.injectGlobalStyles(scope);
+            }
+
+            if (typeof stylesModule.stripContainerBlurAndLocks === 'function') {
+              unblurredContainers += stylesModule.stripContainerBlurAndLocks(
+                scope,
+                win
+              );
+            }
+          }
+
           if (
-            scope &&
-            scope.nodeType === 11 &&
-            typeof stylesModule.injectGlobalStyles === 'function'
+            activeSettings.heuristicSweep &&
+            typeof heuristicsModule.sweepBarriers === 'function'
           ) {
-            stylesModule.injectGlobalStyles(scope);
-          }
-
-          if (typeof stylesModule.stripContainerBlurAndLocks === 'function') {
-            unblurredContainers += stylesModule.stripContainerBlurAndLocks(
+            const sweepResult = heuristicsModule.sweepBarriers(
               scope,
-              win
+              win,
+              activeSettings.threshold
             );
-          }
-
-          if (typeof heuristicsModule.sweepBarriers === 'function') {
-            const sweepResult = heuristicsModule.sweepBarriers(scope, win);
             neutralizedBarriers += sweepResult.neutralizedCount;
           }
         };
@@ -211,6 +357,16 @@
       rootsUnlocked,
       shadowRootsScanned
     };
+
+    sessionStats.neutralizedBarriers += neutralizedBarriers;
+    sessionStats.unblurredContainers += unblurredContainers;
+    sessionStats.rootsUnlocked += rootsUnlocked;
+    sessionStats.shadowRootsScanned = Math.max(
+      sessionStats.shadowRootsScanned,
+      shadowRootsScanned
+    );
+    sessionStats.sweepsExecuted += 1;
+    sessionStats.lastDurationMs = durationMs;
 
     const hasActivity =
       neutralizedBarriers > 0 ||
@@ -256,7 +412,8 @@
       options.MutationObserverImpl ||
       (win && win.MutationObserver) ||
       (typeof MutationObserver !== 'undefined' ? MutationObserver : null);
-    const logger = options.logger || (typeof console !== 'undefined' ? console : null);
+    const logger =
+      options.logger || (typeof console !== 'undefined' ? console : null);
 
     let observer = null;
     let debounceTimer = null;
@@ -385,7 +542,8 @@
     const doc =
       options.doc || (typeof document !== 'undefined' ? document : null);
     const observerController = options.observerController || null;
-    const logger = options.logger || (typeof console !== 'undefined' ? console : null);
+    const logger =
+      options.logger || (typeof console !== 'undefined' ? console : null);
 
     if (!win || typeof win.addEventListener !== 'function') {
       return () => {};
@@ -419,6 +577,126 @@
   }
 
   /**
+   * Binds Chrome Extension storage and runtime messaging for the Popup GUI.
+   *
+   * @param {Window} view
+   * @param {Document} documentObj
+   * @param {ReturnType<typeof createObserverController>} observerController
+   */
+  function bindExtensionMessaging(view, documentObj, observerController) {
+    const chromeApi =
+      typeof chrome !== 'undefined' && chrome ? chrome : view && view.chrome;
+    if (!chromeApi) {
+      return;
+    }
+
+    const hostname =
+      view && view.location && typeof view.location.hostname === 'string'
+        ? view.location.hostname.toLowerCase()
+        : '';
+
+    const applyUpdatedSettings = (nextRaw) => {
+      currentSettings = normalizeSettings(nextRaw);
+      if (!isActiveForHost(currentSettings, hostname)) {
+        observerController.stop();
+        rollbackPageModifications(documentObj, null);
+      } else {
+        if (!currentSettings.heuristicSweep && documentObj) {
+          if (
+            typeof heuristicsModule.restoreNeutralizedBarriers === 'function'
+          ) {
+            heuristicsModule.restoreNeutralizedBarriers(documentObj);
+          }
+        }
+        runSanitationSweep({
+          doc: documentObj,
+          win: view,
+          observerController,
+          trigger: 'settings-update',
+          settings: currentSettings
+        });
+        observerController.start();
+      }
+    };
+
+    if (chromeApi.storage && chromeApi.storage.local) {
+      try {
+        chromeApi.storage.local.get([STORAGE_KEY], (result) => {
+          if (result && result[STORAGE_KEY]) {
+            applyUpdatedSettings(result[STORAGE_KEY]);
+          }
+        });
+      } catch (_err) {
+        // Ignore storage errors in restricted contexts
+      }
+
+      if (
+        chromeApi.storage.onChanged &&
+        typeof chromeApi.storage.onChanged.addListener === 'function'
+      ) {
+        chromeApi.storage.onChanged.addListener((changes, areaName) => {
+          if (areaName === 'local' && changes[STORAGE_KEY]) {
+            applyUpdatedSettings(changes[STORAGE_KEY].newValue);
+          }
+        });
+      }
+    }
+
+    if (
+      chromeApi.runtime &&
+      chromeApi.runtime.onMessage &&
+      typeof chromeApi.runtime.onMessage.addListener === 'function'
+    ) {
+      chromeApi.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+        if (!message || typeof message.type !== 'string') {
+          return false;
+        }
+
+        if (message.type === 'DOM_UNSHACKLE_GET_STATUS') {
+          sendResponse({
+            ok: true,
+            hostname,
+            activeOnHost: isActiveForHost(currentSettings, hostname),
+            settings: currentSettings,
+            stats: Object.assign({}, sessionStats)
+          });
+          return false;
+        }
+
+        if (message.type === 'DOM_UNSHACKLE_RUN_SWEEP') {
+          const sweepTelemetry = runSanitationSweep({
+            doc: documentObj,
+            win: view,
+            observerController,
+            trigger: 'popup-manual',
+            settings: currentSettings
+          });
+          sendResponse({
+            ok: true,
+            telemetry: sweepTelemetry,
+            stats: Object.assign({}, sessionStats)
+          });
+          return false;
+        }
+
+        if (message.type === 'DOM_UNSHACKLE_UPDATE_SETTINGS') {
+          applyUpdatedSettings(message.settings);
+          sendResponse({
+            ok: true,
+            hostname,
+            activeOnHost: isActiveForHost(currentSettings, hostname),
+            settings: currentSettings,
+            stats: Object.assign({}, sessionStats)
+          });
+          return false;
+        }
+
+        return false;
+      });
+    }
+  }
+
+  /**
    * Initializes the full DOM-Unshackle lifecycle on the current page.
    *
    * @param {Window} [win=window]
@@ -440,6 +718,8 @@
       doc: documentObj,
       observerController
     });
+
+    bindExtensionMessaging(view, documentObj, observerController);
 
     const bootSweep = (triggerName) => {
       runSanitationSweep({
@@ -493,8 +773,13 @@
 
   const api = {
     DEFAULT_DEBOUNCE_MS,
+    STORAGE_KEY,
+    DEFAULT_SETTINGS,
     OBSERVER_CONFIG,
+    normalizeSettings,
+    isActiveForHost,
     isRelevantMutation,
+    rollbackPageModifications,
     runSanitationSweep,
     createObserverController,
     isEmergencyHotkey,

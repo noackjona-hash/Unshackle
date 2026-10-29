@@ -357,6 +357,41 @@ a {
   }
 
   /**
+   * Removes the injected global stylesheet from a document or ShadowRoot when disabled via GUI.
+   *
+   * @param {Document|ShadowRoot} [targetRoot=document]
+   * @returns {boolean}
+   */
+  function removeGlobalStyles(targetRoot) {
+    const doc =
+      targetRoot || (typeof document !== 'undefined' ? document : null);
+    if (!doc) {
+      return false;
+    }
+
+    const existing =
+      typeof doc.getElementById === 'function'
+        ? doc.getElementById(STYLE_ELEMENT_ID)
+        : typeof doc.querySelector === 'function'
+          ? doc.querySelector(`#${STYLE_ELEMENT_ID}`)
+          : null;
+
+    if (existing) {
+      if (typeof existing.remove === 'function') {
+        existing.remove();
+      } else if (
+        existing.parentNode &&
+        typeof existing.parentNode.removeChild === 'function'
+      ) {
+        existing.parentNode.removeChild(existing);
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Executes the full CSS invalidation pass: ensures the prioritized stylesheet
    * is mounted, unlocks <html>/<body> scroll properties, and strips blur filters.
    *
@@ -400,6 +435,7 @@ a {
     GLOBAL_OVERRIDE_CSS,
     TEXT_CONTAINER_TAGS,
     injectGlobalStyles,
+    removeGlobalStyles,
     unlockRootScroll,
     stripContainerBlurAndLocks,
     applyGlobalStyleOverrides

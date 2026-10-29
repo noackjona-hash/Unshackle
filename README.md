@@ -58,12 +58,16 @@ Unshackle/
 │   ├── inject-styles.js        # Global CSS override layer & inline lock scrubber
 │   ├── heuristics.js           # Multi-signal barrier scoring & structural safe-guards
 │   ├── event-unhijack.js       # Scroll/key event de-hijacking & Shadow DOM traversal
-│   └── content.js              # Debounced MutationObserver, sweep orchestrator & Alt+B hotkey
+│   ├── content.js              # Debounced MutationObserver, sweep orchestrator & Alt+B hotkey
+│   ├── popup.html              # Extension Popup GUI markup
+│   ├── popup.css               # Extension Popup dark-mode stylesheet
+│   └── popup.js                # Extension Popup settings, domain toggle & telemetry controller
 └── tests/
     ├── inject-styles.test.js   # Unit tests for CSS invalidation engine
     ├── heuristics.test.js      # Unit tests for heuristic scoring & landmark protection
     ├── event-unhijack.test.js  # Unit tests for event un-hijacking & Shadow DOM recursion
-    └── content.test.js         # Unit tests for observer lifecycle, debouncing & hotkey
+    ├── content.test.js         # Unit tests for observer lifecycle, debouncing & hotkey
+    └── popup.test.js           # Unit tests for Popup GUI settings & domain whitelist logic
 ```
 
 ---

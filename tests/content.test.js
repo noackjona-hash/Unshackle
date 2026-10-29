@@ -268,3 +268,4 @@ describe('Step 5: Debounced MutationObserver & Emergency Hotkey Integration (src
     assert.equal(win._keydownHandlers.length, 0);
   });
 });
+

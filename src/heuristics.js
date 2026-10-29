@@ -431,11 +431,16 @@
    *   } | null
    * }}
    */
-  function scoreElement(el, win) {
+  function scoreElement(el, win, customThreshold) {
+    const activeThreshold =
+      typeof customThreshold === 'number' && Number.isFinite(customThreshold)
+        ? customThreshold
+        : BARRIER_SCORE_THRESHOLD;
+
     if (!el || isProtectedElement(el)) {
       return {
         score: 0,
-        threshold: BARRIER_SCORE_THRESHOLD,
+        threshold: activeThreshold,
         isBarrier: false,
         protected: true,
         reasons: ['protected-element'],
@@ -449,7 +454,7 @@
     ) {
       return {
         score: 0,
-        threshold: BARRIER_SCORE_THRESHOLD,
+        threshold: activeThreshold,
         isBarrier: false,
         protected: false,
         reasons: ['already-neutralized'],
@@ -474,7 +479,7 @@
     ) {
       return {
         score: 0,
-        threshold: BARRIER_SCORE_THRESHOLD,
+        threshold: activeThreshold,
         isBarrier: false,
         protected: false,
         reasons: ['already-hidden'],
@@ -515,13 +520,13 @@
 
     // Require at least an elevated stacking context OR strong semantic barrier match + coverage
     const isBarrier =
-      totalScore >= BARRIER_SCORE_THRESHOLD &&
+      totalScore >= activeThreshold &&
       (stacking.isPositioned ||
         (coverage.coversViewport && semantics.matchedKeywords.length > 0));
 
     return {
       score: totalScore,
-      threshold: BARRIER_SCORE_THRESHOLD,
+      threshold: activeThreshold,
       isBarrier,
       protected: false,
       reasons,
@@ -564,13 +569,55 @@
   }
 
   /**
+   * Restores previously neutralized barrier elements inside a root scope when toggled off.
+   *
+   * @param {Document|ShadowRoot|Element} [rootNode=document]
+   * @returns {number} Count of restored elements
+   */
+  function restoreNeutralizedBarriers(rootNode) {
+    const scope =
+      rootNode || (typeof document !== 'undefined' ? document : null);
+    if (!scope || typeof scope.querySelectorAll !== 'function') {
+      return 0;
+    }
+
+    const nodes = scope.querySelectorAll('[data-unshackle-neutralized="true"]');
+    let restored = 0;
+
+    for (let i = 0; i < nodes.length; i++) {
+      const el = nodes[i];
+      if (!el || !el.style) {
+        continue;
+      }
+      if (typeof el.style.removeProperty === 'function') {
+        el.style.removeProperty('display');
+        el.style.removeProperty('visibility');
+        el.style.removeProperty('opacity');
+        el.style.removeProperty('pointer-events');
+        el.style.removeProperty('z-index');
+        el.style.removeProperty('width');
+        el.style.removeProperty('height');
+        el.style.removeProperty('overflow');
+      }
+      if (typeof el.removeAttribute === 'function') {
+        el.removeAttribute('data-unshackle-neutralized');
+        el.removeAttribute('aria-hidden');
+      }
+      restored++;
+    }
+
+    return restored;
+  }
+
+  /**
    * Scans a root node (Document, ShadowRoot, or Element) for barriers and neutralizes them.
    *
    * @param {Document|ShadowRoot|Element} [rootNode=document]
    * @param {Window} [win=window]
+   * @param {number} [customThreshold]
    * @returns {{ neutralizedCount: number, neutralizedElements: Array<{ element: Element, score: number, reasons: string[] }> }}
    */
-  function sweepBarriers(rootNode, win) {
+  function sweepBarriers(rootNode, win, customThreshold) {
     const scope =
       rootNode || (typeof document !== 'undefined' ? document : null);
     if (!scope || typeof scope.querySelectorAll !== 'function') {
@@ -582,7 +629,7 @@
 
     for (let i = 0; i < candidates.length; i++) {
       const el = candidates[i];
-      const evaluation = scoreElement(el, win);
+      const evaluation = scoreElement(el, win, customThreshold);
 
       if (evaluation.isBarrier) {
         if (neutralizeBarrier(el)) {
@@ -614,6 +661,7 @@
     evaluateSemanticSignals,
     scoreElement,
     neutralizeBarrier,
+    restoreNeutralizedBarriers,
     sweepBarriers
   };
 

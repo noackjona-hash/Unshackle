@@ -2,10 +2,17 @@
   "manifest_version": 3,
   "name": "DOM-Unshackle",
   "short_name": "DOM-Unshackle",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Production-grade Chromium extension that neutralizes pseudo-paywalls, scroll locks, event hijacking, and CSS blur filters.",
   "minimum_chrome_version": "111",
-  "permissions": [],
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "action": {
+    "default_title": "DOM-Unshackle Settings & Control",
+    "default_popup": "src/popup.html"
+  },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none';"
   },

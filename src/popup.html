@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOM-Unshackle</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="logo-badge" aria-hidden="true">⚡</div>
+        <div>
+          <h1 class="title">DOM-Unshackle</h1>
+          <span id="status-badge" class="status-badge active">AKTIV</span>
+        </div>
+      </div>
+      <label class="switch" title="DOM-Unshackle global aktivieren/deaktivieren">
+        <input type="checkbox" id="toggle-enabled" checked>
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <!-- Current Domain Control -->
+    <section class="card host-card">
+      <div class="host-info">
+        <span class="label-muted">Aktuelle Webseite</span>
+        <strong id="current-hostname" class="hostname">—</strong>
+      </div>
+      <label class="switch" title="Für diese Domain aktivieren/deaktivieren">
+        <input type="checkbox" id="toggle-host" checked>
+        <span class="slider"></span>
+      </label>
+    </section>
+
+    <!-- Live Telemetry -->
+    <section class="stats-grid" aria-label="Live-Statistik">
+      <div class="stat-box">
+        <span id="stat-barriers" class="stat-value">0</span>
+        <span class="stat-label">Barrieren</span>
+      </div>
+      <div class="stat-box">
+        <span id="stat-blurs" class="stat-value">0</span>
+        <span class="stat-label">Blur-Filter</span>
+      </div>
+      <div class="stat-box">
+        <span id="stat-roots" class="stat-value">0</span>
+        <span class="stat-label">Scroll-Locks</span>
+      </div>
+      <div class="stat-box">
+        <span id="stat-duration" class="stat-value">0 ms</span>
+        <span class="stat-label">Sweep-Dauer</span>
+      </div>
+    </section>
+
+    <!-- Module Settings -->
+    <section class="card settings-card">
+      <h2 class="section-title">Schutz-Module &amp; Einstellungen</h2>
+
+      <div class="setting-row">
+        <div class="setting-text">
+          <span class="setting-name">Globaler CSS-Unlock</span>
+          <span class="setting-desc">Scroll-Sperren &amp; CSS-Blur aufheben</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-css-unlock" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-text">
+          <span class="setting-name">Heuristische Paywall-Abwehr</span>
+          <span class="setting-desc">Overlays, Gateways &amp; Backdrops entfernen</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-heuristic" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-text">
+          <span class="setting-name">Event-De-Hijacking</span>
+          <span class="setting-desc">Mausrad, Touch &amp; Navigationstasten schützen</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-events" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="threshold-block">
+        <div class="threshold-header">
+          <span class="setting-name">Heuristik-Schwellenwert</span>
+          <span id="threshold-display" class="threshold-pill">60 (Standard)</span>
+        </div>
+        <input
+          type="range"
+          id="range-threshold"
+          min="40"
+          max="85"
+          step="5"
+          value="60"
+        >
+        <div class="threshold-scale">
+          <span>40 (Aggressiv)</span>
+          <span>60 (Balance)</span>
+          <span>85 (Vorsichtig)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Actions -->
+    <footer class="footer">
+      <button type="button" id="btn-sweep" class="btn btn-primary">
+        Jetzt bereinigen (Alt + B)
+      </button>
+      <button type="button" id="btn-reset" class="btn btn-secondary" title="Auf Standardwerte zurücksetzen">
+        Reset
+      </button>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

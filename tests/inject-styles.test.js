@@ -176,3 +176,4 @@ describe('Step 2: Global CSS Invalidation Engine (src/inject-styles.js)', () => 
     assert.equal(summary.styleInjected, true);
   });
 });
+

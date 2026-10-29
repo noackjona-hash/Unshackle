@@ -178,3 +178,4 @@ describe('Step 3: Heuristic Overlay & Barrier Detection (src/heuristics.js)', ()
     assert.equal(normalTopBar.style.getPropertyValue('display'), '');
   });
 });
+
