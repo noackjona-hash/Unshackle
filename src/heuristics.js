@@ -240,7 +240,12 @@
       };
     }
 
-    const rect = el.getBoundingClientRect();
+    let rect = null;
+    try {
+      rect = el.getBoundingClientRect();
+    } catch (_err) {
+      rect = null;
+    }
     if (!rect || rect.width <= 0 || rect.height <= 0) {
       return {
         coversViewport: false,

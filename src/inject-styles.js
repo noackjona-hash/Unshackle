@@ -198,6 +198,8 @@ a {
     }
 
     let modifiedCount = 0;
+    const view =
+      targetDoc.defaultView || (typeof window !== 'undefined' ? window : null);
     const roots = [targetDoc.documentElement, targetDoc.body].filter(Boolean);
 
     for (const el of roots) {
@@ -205,16 +207,33 @@ a {
         continue;
       }
 
-      let touched = false;
       const inlineStyle = el.getAttribute
         ? el.getAttribute('style') || ''
         : '';
 
-      if (
-        /overflow|position|max-height|height|touch-action|pointer-events|user-select|filter/i.test(
+      let hasComputedLock = false;
+      if (view && typeof view.getComputedStyle === 'function') {
+        try {
+          const computed = view.getComputedStyle(el);
+          if (
+            computed &&
+            (computed.overflow === 'hidden' ||
+              computed.overflowY === 'hidden' ||
+              computed.position === 'fixed')
+          ) {
+            hasComputedLock = true;
+          }
+        } catch (_err) {
+          hasComputedLock = false;
+        }
+      }
+
+      const hasInlineLock =
+        /overflow\s*:\s*(hidden|clip)|position\s*:\s*(fixed|sticky)|max-height\s*:\s*(?!none)|touch-action\s*:\s*none|pointer-events\s*:\s*none|user-select\s*:\s*none|blur\s*\(/i.test(
           inlineStyle
-        )
-      ) {
+        );
+
+      if (hasInlineLock || hasComputedLock) {
         el.style.setProperty('overflow', 'auto', 'important');
         el.style.setProperty('overflow-y', 'auto', 'important');
         el.style.setProperty('position', 'static', 'important');
@@ -226,10 +245,6 @@ a {
         el.style.setProperty('filter', 'none', 'important');
         el.style.setProperty('backdrop-filter', 'none', 'important');
         el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
-        touched = true;
-      }
-
-      if (touched) {
         modifiedCount++;
       }
     }

@@ -212,7 +212,13 @@
       shadowRootsScanned
     };
 
-    if (logger && typeof logger.debug === 'function') {
+    const hasActivity =
+      neutralizedBarriers > 0 ||
+      unblurredContainers > 0 ||
+      rootsUnlocked > 0 ||
+      trigger !== 'mutation';
+
+    if (logger && typeof logger.debug === 'function' && hasActivity) {
       logger.debug('[DOM-Unshackle] Sanitation sweep completed:', telemetry);
     }
 
