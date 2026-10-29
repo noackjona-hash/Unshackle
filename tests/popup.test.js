@@ -47,3 +47,4 @@ describe('Popup GUI & Settings Management (src/popup.js & src/content.js)', () =
     assert.equal(isActiveForHost(cfg, 'other.example.org'), true);
   });
 });
+
